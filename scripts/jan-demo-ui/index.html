@@ -1,0 +1,2019 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jan Console — AI Workflow Dashboard</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-alt: #f8fafc;
+      --ink: #101828;
+      --muted: #667085;
+      --line: #e4e7ec;
+      --line-strong: #d0d5dd;
+      --accent: #2563eb;
+      --accent-soft: #eaf2ff;
+      --success: #16a34a;
+      --success-soft: #ecfdf3;
+      --danger: #dc2626;
+      --shadow: 0 14px 40px rgba(16, 24, 40, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: "Roboto", "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, #dfe9ff 0%, transparent 26%),
+        radial-gradient(circle at top right, #ffe7da 0%, transparent 22%),
+        var(--bg);
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 248px 1fr;
+    }
+
+    .sidebar {
+      background: rgba(255, 255, 255, 0.84);
+      backdrop-filter: blur(14px);
+      border-right: 1px solid var(--line);
+      padding: 22px 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: white;
+      background: linear-gradient(140deg, #1d4ed8, #4f46e5);
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.35);
+    }
+
+    .brand-copy h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .brand-copy p {
+      margin: 3px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .nav-group { margin-bottom: 22px; }
+
+    .nav-label {
+      margin: 0 0 10px;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #98a2b3;
+      font-weight: 700;
+    }
+
+    .nav-link,
+    .nav-button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      color: #344054;
+      background: transparent;
+      cursor: pointer;
+      margin-bottom: 2px;
+      box-shadow: none;
+      font-weight: 400;
+    }
+
+    .nav-link:hover,
+    .nav-button:hover,
+    .nav-link.active {
+      background: var(--accent-soft);
+      color: #12379d;
+      border-color: #d8e4ff;
+    }
+
+    .nav-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.7;
+    }
+
+    .sidebar-note {
+      margin-top: 26px;
+      padding: 14px;
+      border-radius: 16px;
+      background: #101828;
+      color: #ffffff;
+    }
+
+    .sidebar-note strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .sidebar-note p {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.55;
+      color: rgba(255,255,255,0.78);
+    }
+
+    .content { padding: 24px; }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .headline-card {
+      flex: 1;
+      background: linear-gradient(135deg, #ffffff, #f8fbff 55%, #fff6f0);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 22px 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: var(--success-soft);
+      color: #15803d;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-pill::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .headline-card h2 {
+      margin: 14px 0 8px;
+      font-size: 34px;
+      line-height: 1.08;
+    }
+
+    .headline-card p {
+      margin: 0;
+      max-width: 860px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .ghost-card {
+      width: 230px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .ghost-card h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .ghost-card .metric {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .ghost-card p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .ghost-card .metric-subtle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .stat-card,
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 6px 18px rgba(16, 24, 40, 0.04);
+    }
+
+    .stat-card {
+      min-height: 124px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .stat-top p,
+    .panel-header p,
+    .muted {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .stat-value {
+      font-size: 30px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .trend {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #eff8ff;
+      color: #175cd3;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .panel-header h3,
+    .workspace-header h3,
+    .card-head h3 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .chart-shell {
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+      min-height: 220px;
+      padding: 10px 6px 4px;
+    }
+
+    .bar-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bar-track {
+      width: 100%;
+      max-width: 74px;
+      height: 168px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #edf2ff, #f8fbff);
+      display: flex;
+      align-items: flex-end;
+      padding: 8px;
+    }
+
+    .bar-fill {
+      width: 100%;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #5b8cff, #2563eb);
+      min-height: 10%;
+      transition: height 0.25s ease;
+    }
+
+    .bar-label,
+    .bar-value {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .bar-value {
+      font-weight: 700;
+      color: #344054;
+    }
+
+    .mix-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .mix-row {
+      display: grid;
+      grid-template-columns: 140px 1fr 54px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .mix-row span { font-size: 13px; }
+
+    .mix-bar {
+      height: 12px;
+      border-radius: 999px;
+      background: #eef2f7;
+      overflow: hidden;
+    }
+
+    .mix-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #7c9cff, #5b8cff);
+    }
+
+    .workflow-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .workflow-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .workflow-item {
+      display: grid;
+      grid-template-columns: 40px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 18px;
+      background: var(--panel-alt);
+      border: 1px solid #edf0f4;
+    }
+
+    .workflow-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: #eef4ff;
+      color: #1d4ed8;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .workflow-copy p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .workflow-copy strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .workflow-chip {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: lowercase;
+      border: 1px solid transparent;
+    }
+
+    .workflow-chip.done { color: #15803d; background: #ecfdf3; border-color: #d1fadf; }
+    .workflow-chip.pending { color: #667085; background: #f2f4f7; border-color: #eaecf0; }
+    .workflow-chip.active { color: #175cd3; background: #eff8ff; border-color: #d1e9ff; }
+    .workflow-chip.error { color: #b42318; background: #fef3f2; border-color: #fecdca; }
+
+    .table-wrap { overflow: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid #eef2f6;
+      vertical-align: top;
+    }
+
+    th {
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #98a2b3;
+      font-weight: 700;
+    }
+
+    td strong { font-weight: 700; }
+
+    .workspace-shell {
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .workspace-nav {
+      background: rgba(255,255,255,0.85);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+
+    .workspace-btn {
+      text-align: left;
+      width: 100%;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #344054;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 400;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    .workspace-btn.active,
+    .workspace-btn:hover {
+      background: var(--accent-soft);
+      color: #12379d;
+      border-color: #d8e4ff;
+    }
+
+    .workspace-content { display: grid; gap: 14px; }
+    .panel-view { display: none; }
+    .panel-view.active { display: block; }
+
+    .form-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 6px 18px rgba(16, 24, 40, 0.04);
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .card-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .hidden { display: none !important; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    label {
+      font-weight: 700;
+      color: #344054;
+    }
+
+    input, select, textarea, button {
+      width: 100%;
+      font-family: inherit;
+      font-size: 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line-strong);
+      background: #fff;
+      padding: 12px 14px;
+    }
+
+    textarea {
+      min-height: 112px;
+      resize: vertical;
+    }
+
+    select[multiple] { min-height: 180px; }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #84a9ff;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    button {
+      width: auto;
+      border: none;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
+    }
+
+    button.secondary {
+      background: #475467;
+      box-shadow: none;
+    }
+
+    button.soft {
+      background: #eef4ff;
+      color: #1947c7;
+      box-shadow: none;
+      border: 1px solid #d7e4ff;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .muted { color: var(--muted); font-size: 13px; }
+    .ok { color: var(--success); font-size: 13px; font-weight: 700; }
+    .err { color: var(--danger); font-size: 13px; font-weight: 700; }
+
+    pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      background: #f8fafc;
+      border: 1px solid #eef2f6;
+      border-radius: 18px;
+      padding: 14px;
+      max-height: 260px;
+      overflow: auto;
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .mini-card {
+      background: #f8fafc;
+      border: 1px solid #eef2f6;
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .section-anchor { scroll-margin-top: 18px; }
+
+    @media (max-width: 1200px) {
+      .stats-grid,
+      .overview-grid,
+      .workflow-grid,
+      .two-col,
+      .workspace-shell { grid-template-columns: 1fr; }
+      .ghost-card { width: 100%; }
+    }
+
+    @media (max-width: 980px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar {
+        position: static;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+      }
+      .content { padding: 16px; }
+      .topbar { flex-direction: column; }
+      .row { grid-template-columns: 1fr; }
+    }
+
+    /* ── Trend badges ─────────────────── */
+    .trend { min-width: 54px; text-align: center; }
+    .trend.up   { background: #ecfdf3; color: #15803d; }
+    .trend.down { background: #fef3f2; color: #b42318; }
+    .trend-block { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .trend-block span:first-child { font-size: 13px; font-weight: 700; }
+    .trend-block.up   span:first-child { color: #15803d; }
+    .trend-block.down span:first-child { color: #b42318; }
+    .trend-label { font-size: 11px; color: #98a2b3; }
+
+    /* ── Chat layout ──────────────────── */
+    .chat-layout {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 14px;
+      align-items: start;
+    }
+    .chat-main {
+      display: flex;
+      flex-direction: column;
+      height: 640px;
+      padding: 0;
+      overflow: hidden;
+    }
+    .chat-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chat-model-badge { display: flex; align-items: center; gap: 10px; }
+    .chat-model-badge span:first-child { font-weight: 700; font-size: 14px; }
+    .chat-model-sub { font-size: 12px; color: var(--muted); }
+    .chat-thread {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .chat-msg { display: flex; gap: 10px; align-items: flex-start; }
+    .chat-msg.user { flex-direction: row-reverse; }
+    .chat-avatar {
+      width: 32px; height: 32px; border-radius: 10px;
+      display: grid; place-items: center;
+      font-size: 12px; font-weight: 800; flex-shrink: 0;
+    }
+    .chat-msg.user      .chat-avatar { background: linear-gradient(140deg,#2563eb,#4f46e5); color: #fff; }
+    .chat-msg.assistant .chat-avatar { background: #f1f5f9; color: #344054; }
+    .chat-bubble-wrap { display: flex; flex-direction: column; gap: 4px; max-width: 78%; }
+    .chat-msg.user .chat-bubble-wrap { align-items: flex-end; }
+    .chat-bubble-meta { display: flex; align-items: center; gap: 6px; }
+    .chat-bubble-meta strong { font-size: 13px; }
+    .chat-bubble-meta span  { font-size: 11px; color: var(--muted); }
+    .chat-bubble {
+      padding: 12px 14px; border-radius: 16px;
+      font-size: 14px; line-height: 1.55; white-space: pre-wrap;
+    }
+    .chat-msg.user      .chat-bubble { background: linear-gradient(135deg,#2563eb,#1d4ed8); color: #fff; border-bottom-right-radius: 4px; }
+    .chat-msg.assistant .chat-bubble { background: #f8fafc; border: 1px solid #eef2f6; border-bottom-left-radius: 4px; }
+    .chat-input-bar {
+      border-top: 1px solid var(--line);
+      padding: 14px 18px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .chat-input-bar textarea {
+      border-radius: 12px; resize: none; min-height: 72px;
+      font-size: 14px; border: 1px solid var(--line-strong); padding: 10px 12px; width: 100%;
+    }
+    .chat-input-footer { display: flex; justify-content: space-between; align-items: center; }
+    .chat-sidebar { display: flex; flex-direction: column; gap: 14px; }
+    .chat-params { padding: 16px; }
+    .chat-params-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .chat-params-header h3 { margin: 0; font-size: 16px; }
+    .param-row { margin-bottom: 12px; }
+    .param-row label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: #344054; }
+    .param-row input[type="number"], .param-row select { width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 13px; }
+    .param-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    input[type="range"].slider {
+      width: 100%; height: 6px; border-radius: 999px; appearance: none;
+      background: linear-gradient(90deg,#2563eb 35%,#e4e7ec 35%);
+      border: none; padding: 0; cursor: pointer; box-shadow: none;
+    }
+    input[type="range"].slider::-webkit-slider-thumb {
+      appearance: none; width: 16px; height: 16px; border-radius: 50%;
+      background: #fff; border: 2px solid #2563eb;
+      box-shadow: 0 2px 6px rgba(37,99,235,0.3);
+    }
+    .chat-session { padding: 16px; }
+    .chat-session h3 { margin: 0 0 12px; font-size: 16px; }
+    .session-stats { margin: 0; display: grid; gap: 0; }
+    .session-stats div { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eef2f6; }
+    .session-stats div:last-child { border-bottom: none; }
+    .session-stats dt { font-size: 13px; color: var(--muted); }
+    .session-stats dd { margin: 0; font-size: 14px; font-weight: 700; }
+
+    /* ── Usage layout ─────────────────── */
+    .usage-filter-bar {
+      padding: 16px 18px; margin-bottom: 14px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .usage-filter-inputs { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .filter-field { display: flex; flex-direction: column; gap: 4px; }
+    .filter-field label { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .filter-field input { width: 220px; padding: 10px 12px; border-radius: 10px; font-size: 13px; }
+    .usage-user-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .user-tab {
+      padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 700;
+      background: #f2f4f7; color: #344054; border: 1px solid #e4e7ec;
+      cursor: pointer; box-shadow: none; width: auto;
+    }
+    .user-tab.active, .user-tab:hover { background: var(--accent-soft); color: #1947c7; border-color: #d7e4ff; }
+    .usage-kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 14px; }
+    .usage-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .status-success     { color:#15803d;background:#ecfdf3;border:1px solid #d1fadf;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;display:inline-block; }
+    .status-rate-limited{ color:#b42318;background:#fef3f2;border:1px solid #fecdca;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;display:inline-block; }
+    .status-error       { color:#b42318;background:#fef3f2;border:1px solid #fecdca;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;display:inline-block; }
+
+    @media (max-width: 1200px) {
+      .chat-layout { grid-template-columns: 1fr; }
+      .usage-kpi-grid { grid-template-columns: 1fr 1fr; }
+      .usage-charts-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">J</div>
+      <div class="brand-copy">
+        <h1>Jan Console</h1>
+        <p>AI Workflow Dashboard</p>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <p class="nav-label">Overview</p>
+      <a class="nav-link active" href="#overview"><span class="nav-dot"></span>Dashboard</a>
+      <a class="nav-link" href="#workspace"><span class="nav-dot"></span>Workspace</a>
+      <a class="nav-link" href="#usageCard"><span class="nav-dot"></span>Usage</a>
+    </div>
+
+    <div class="nav-group">
+      <p class="nav-label">Workflow</p>
+      <button class="nav-button workspace-jump" data-view="loginView"><span class="nav-dot"></span>Authenticate User</button>
+      <button class="nav-button workspace-jump" data-view="modelsView"><span class="nav-dot"></span>Discover Models</button>
+      <button class="nav-button workspace-jump" data-view="chatView"><span class="nav-dot"></span>Run Chat Request</button>
+      <button class="nav-button workspace-jump" data-view="assignView"><span class="nav-dot"></span>Assign Default Model</button>
+      <button class="nav-button workspace-jump" data-view="usageView"><span class="nav-dot"></span>Track Usage</button>
+    </div>
+
+    <div class="nav-group">
+      <p class="nav-label">Admin</p>
+      <button id="toggleAdminBtn" class="nav-button"><span class="nav-dot"></span>Policy Manager</button>
+    </div>
+
+    <div class="sidebar-note">
+      <strong>Demo mode</strong>
+      <p>Use the workspace panel for live login/chat, and the dashboard view for usage, workflow health, and request summaries.</p>
+    </div>
+  </aside>
+
+  <main class="content">
+    <section class="topbar section-anchor" id="overview">
+      <div class="headline-card">
+        <span class="status-pill">Workflow active</span>
+        <h2 id="welcomeTitle">Welcome back, Duane</h2>
+        <p id="welcomeSubtitle">Your workflow is healthy. 5 of 5 steps connected, 104 models available, and usage is trending up 14% this week.</p>
+        <div class="top-actions">
+          <a class="soft" href="#workspace" style="display:inline-flex;align-items:center;padding:12px 16px;border-radius:14px;font-weight:800;">Open Chat Console</a>
+          <a class="soft" href="#usageCard" style="display:inline-flex;align-items:center;padding:12px 16px;border-radius:14px;font-weight:800;">View Usage</a>
+        </div>
+      </div>
+      <div class="ghost-card">
+        <h3>Current user</h3>
+        <div class="metric" id="currentRoleMetric">Standard</div>
+        <p id="currentUserMeta">Monika authenticated and ready to use the workflow.</p>
+        <div class="metric-subtle" id="currentStatusBadge">Connected</div>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-top">
+          <div>
+            <p>Total Requests</p>
+            <div class="stat-value" id="metricRequests">0</div>
+          </div>
+          <span class="trend" id="trendRequests">0%</span>
+        </div>
+        <p>Requests seen in the current usage window.</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top">
+          <div>
+            <p>Tokens Used</p>
+            <div class="stat-value" id="metricTokens">0</div>
+          </div>
+          <span class="trend" id="trendTokens">0%</span>
+        </div>
+        <p>Prompt + completion tokens aggregated from the dashboard feed.</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top">
+          <div>
+            <p>Cost (window)</p>
+            <div class="stat-value" id="metricCost">$0.00</div>
+          </div>
+          <span class="trend" id="trendCost">0%</span>
+        </div>
+        <p>Estimated cost for the selected usage window.</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top">
+          <div>
+            <p>Active Users</p>
+            <div class="stat-value" id="metricUsers">0</div>
+          </div>
+          <span class="trend" id="trendUsers">0%</span>
+        </div>
+        <p>Unique users represented in the visible usage summary.</p>
+      </div>
+    </section>
+
+    <section class="overview-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h3>Request volume</h3>
+            <p>Recent activity derived from the latest request feed.</p>
+          </div>
+          <p id="volumeHint">Last 7 buckets</p>
+        </div>
+        <div class="chart-shell" id="requestVolumeChart"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h3>Model mix</h3>
+            <p>Share of recent requests by model.</p>
+          </div>
+          <p id="modelMixHint">Live</p>
+        </div>
+        <div class="mix-list" id="modelMixList"></div>
+      </div>
+    </section>
+
+    <section class="workflow-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h3>Workflow status</h3>
+            <p>Five-step pipeline health with live status from the current page state.</p>
+          </div>
+        </div>
+        <div class="workflow-list">
+          <div class="workflow-item"><div class="workflow-icon">1</div><div class="workflow-copy"><strong>Authenticate User</strong><p>Step 1</p></div><div class="workflow-chip pending" id="stepLogin">pending</div></div>
+          <div class="workflow-item"><div class="workflow-icon">2</div><div class="workflow-copy"><strong>Discover Models</strong><p>Step 2</p></div><div class="workflow-chip pending" id="stepModels">pending</div></div>
+          <div class="workflow-item"><div class="workflow-icon">3</div><div class="workflow-copy"><strong>Run Chat Request</strong><p>Step 3</p></div><div class="workflow-chip pending" id="stepChat">pending</div></div>
+          <div class="workflow-item"><div class="workflow-icon">4</div><div class="workflow-copy"><strong>Assign Default Model</strong><p>Step 4</p></div><div class="workflow-chip pending" id="stepAssign">pending</div></div>
+          <div class="workflow-item"><div class="workflow-icon">5</div><div class="workflow-copy"><strong>Track Usage</strong><p>Step 5</p></div><div class="workflow-chip pending" id="stepUsage">pending</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h3>Recent requests</h3>
+            <p>Latest tracked requests from the usage feed.</p>
+          </div>
+          <a href="#usageCard" class="soft" style="display:inline-flex;align-items:center;padding:10px 14px;border-radius:12px;font-weight:800;">View all</a>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Time</th><th>User</th><th>Model</th><th>Tokens</th><th>Cost</th></tr>
+            </thead>
+            <tbody id="recentRequestsTable">
+              <tr><td colspan="5" class="muted">Load usage to populate recent requests.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="workspace-shell section-anchor" id="workspace">
+      <aside class="workspace-nav">
+        <button class="workspace-btn active" data-view="loginView">1. Login</button>
+        <button class="workspace-btn" data-view="modelsView">2. Models</button>
+        <button class="workspace-btn" data-view="chatView">3. Chat</button>
+        <button class="workspace-btn" data-view="assignView">4. Assign Default</button>
+        <button class="workspace-btn" data-view="usageView">5. Usage Dashboard</button>
+        <button class="workspace-btn hidden" id="adminNavBtn" data-view="policyView">Admin Policy</button>
+      </aside>
+
+      <div class="workspace-content">
+        <div class="panel-view active" id="loginView">
+          <div class="form-panel" id="loginCard">
+            <div class="card-head">
+              <div>
+                <h3>Authenticate User</h3>
+                <p>Use Keycloak and the jan-client to mint a bearer token for chat and usage flows.</p>
+              </div>
+            </div>
+            <div class="row"><label for="kcBase">Keycloak Base</label><input id="kcBase" value="http://localhost:8085"></div>
+            <div class="row"><label for="realm">Realm</label><input id="realm" value="jan"></div>
+            <div class="row"><label for="clientId">Client ID</label><input id="clientId" value="jan-client"></div>
+            <div class="row"><label for="username">Username</label><input id="username" value="monika@allerin.com"></div>
+            <div class="row"><label for="password">Password</label><input id="password" type="password" value="Demo@12345"></div>
+            <div class="actions">
+              <button id="loginBtn">Login</button>
+              <button id="copyTokenBtn" class="secondary" disabled>Copy Token</button>
+            </div>
+            <div id="loginStatus" class="muted"></div>
+          </div>
+        </div>
+
+        <div class="panel-view" id="modelsView">
+          <div class="form-panel" id="modelsCard">
+            <div class="card-head">
+              <div>
+                <h3>Discover Models</h3>
+                <p>Fetch the role-filtered model catalog from the policy-aware gateway.</p>
+              </div>
+            </div>
+            <div class="row"><label for="apiBase">Jan API Base</label><input id="apiBase" value="http://localhost:8000"></div>
+            <div class="row"><label for="showUnknown">Show unknown models</label><input id="showUnknown" type="checkbox"></div>
+            <div class="actions"><button id="modelsBtn" class="secondary">Load Models</button></div>
+            <div class="row"><label for="modelSelect">Model</label><select id="modelSelect"></select></div>
+            <div id="modelsStatus" class="muted"></div>
+          </div>
+        </div>
+
+        <div class="panel-view" id="chatView">
+          <div class="chat-layout">
+            <!-- Left: conversation thread -->
+            <div class="chat-main panel">
+              <div class="chat-header">
+                <div class="chat-model-badge">
+                  <span id="chatModelDisplay">Select a model</span>
+                  <span class="chat-model-sub">temperature <span id="chatTempDisplay">0.7</span> · stream on</span>
+                </div>
+              </div>
+              <div class="chat-thread" id="chatThread">
+                <div class="chat-msg user">
+                  <div class="chat-avatar">Y</div>
+                  <div class="chat-bubble-wrap">
+                    <div class="chat-bubble-meta"><strong>You</strong></div>
+                    <div class="chat-bubble">How are you doing today? Which restaurants are closed in Austin today?</div>
+                  </div>
+                </div>
+                <div class="chat-msg assistant">
+                  <div class="chat-avatar">A</div>
+                  <div class="chat-bubble-wrap">
+                    <div class="chat-bubble-meta"><strong>Assistant</strong><span>187 tok</span></div>
+                    <div class="chat-bubble">As an AI, I don't have feelings, but thanks for asking! I'm not able to fetch real-time restaurant hours, but great sources for Austin include Google Maps, Yelp, and the restaurant's own website. The Austin Chronicle dining section and OpenTable also surface live availability for reservation-taking spots.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="chat-input-bar">
+                <textarea id="prompt" placeholder="Send a message… (⌘+Enter)" rows="3">Give me 3 demo bullet points.</textarea>
+                <div class="chat-input-footer">
+                  <span id="charCount" class="muted">0 chars</span>
+                  <button id="chatBtn" style="width:auto;padding:10px 20px;">Send</button>
+                </div>
+              </div>
+            </div>
+            <!-- Right: parameters + session stats -->
+            <div class="chat-sidebar">
+              <div class="chat-params panel">
+                <div class="chat-params-header">
+                  <h3>Parameters</h3>
+                </div>
+                <div class="param-row">
+                  <label>Model</label>
+                  <select id="modelSelect"></select>
+                </div>
+                <div class="param-row">
+                  <div class="param-label-row"><label>Temperature</label><span id="tempValue">0.7</span></div>
+                  <input type="range" id="tempSlider" class="slider" min="0" max="2" step="0.1" value="0.7">
+                </div>
+                <div class="param-row">
+                  <label>Max Tokens</label>
+                  <input type="number" id="maxTokens" value="2048" min="1" max="32000">
+                </div>
+              </div>
+              <div class="chat-session panel">
+                <h3>This session</h3>
+                <dl class="session-stats">
+                  <div><dt>Messages</dt><dd id="sessionMsgs">2</dd></div>
+                  <div><dt>Tokens</dt><dd id="sessionTokens">187</dd></div>
+                  <div><dt>Cost</dt><dd id="sessionCost">$0.0068</dd></div>
+                  <div><dt>Latency</dt><dd id="sessionLatency">1.2s</dd></div>
+                </dl>
+              </div>
+            </div>
+          </div>
+          <div id="chatStatus" class="muted" style="margin-top:8px;padding:0 4px;"></div>
+          <!-- legacy compat -->
+          <pre id="chatOut" style="display:none;"></pre>
+        </div>
+
+        <div class="panel-view" id="assignView">
+          <div class="form-panel" id="assignCard">
+            <div class="card-head">
+              <div>
+                <h3>Assign Default Model</h3>
+                <p>Demo mode uses the target user’s own credentials to update their preferences.</p>
+              </div>
+            </div>
+            <div class="row"><label for="assignUsername">Target Username</label><input id="assignUsername" value="monika@allerin.com"></div>
+            <div class="row"><label for="assignPassword">Target Password</label><input id="assignPassword" type="password" value="Demo@12345"></div>
+            <div class="row"><label for="assignModelSelect">Assign Model</label><select id="assignModelSelect"></select></div>
+            <div class="actions"><button id="assignBtn" class="secondary">Assign Model To User</button></div>
+            <div id="assignStatus" class="muted"></div>
+          </div>
+        </div>
+
+        <div class="panel-view" id="usageView">
+          <div id="usageCard">
+            <!-- Filter bar -->
+            <div class="usage-filter-bar panel">
+              <div class="usage-filter-inputs">
+                <div class="filter-field">
+                  <label>User filter</label>
+                  <input id="usageUser" value="monika@allerin.com">
+                </div>
+                <div class="filter-field">
+                  <label>Time range</label>
+                  <input id="usageDays" type="number" min="1" max="365" value="30" placeholder="Days">
+                </div>
+                <button id="usageBtn" style="width:auto;padding:10px 18px;align-self:flex-end;">Apply</button>
+              </div>
+              <div class="usage-user-tabs">
+                <button class="user-tab active" id="usageMonikaBtn">Monika</button>
+                <button class="user-tab" id="usageDuaneBtn">Duane</button>
+                <button class="user-tab" id="usagePremiumBtn">Premium tier</button>
+                <button class="user-tab" id="usageAllBtn">All users</button>
+              </div>
+            </div>
+            <!-- KPI cards -->
+            <div class="usage-kpi-grid">
+              <div class="stat-card">
+                <div class="stat-top">
+                  <div><p>Requests</p><div class="stat-value" id="usageMetricRequests">1,477</div></div>
+                  <div class="trend-block up"><span>▲ +14%</span><span class="trend-label">vs last week</span></div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-top">
+                  <div><p>Prompt tokens</p><div class="stat-value" id="usageMetricPrompt">212.6K</div></div>
+                  <div class="trend-block up"><span>▲ +8%</span><span class="trend-label">vs last week</span></div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-top">
+                  <div><p>Completion tokens</p><div class="stat-value" id="usageMetricCompletion">65.7K</div></div>
+                  <div class="trend-block up"><span>▲ +12%</span><span class="trend-label">vs last week</span></div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-top">
+                  <div><p>Total cost</p><div class="stat-value" id="usageMetricCost">$15.16</div></div>
+                  <div class="trend-block down"><span>▼ -3%</span><span class="trend-label">vs last week</span></div>
+                </div>
+              </div>
+            </div>
+            <!-- Charts -->
+            <div class="usage-charts-row">
+              <div class="panel">
+                <h3>Tokens per day</h3>
+                <p class="muted" style="margin:4px 0 12px;">Prompt + completion</p>
+                <div class="chart-shell" id="usageTokensChart"></div>
+              </div>
+              <div class="panel">
+                <h3>Cost trend</h3>
+                <p class="muted" style="margin:4px 0 12px;">USD per day</p>
+                <div class="chart-shell" id="usageCostChart"></div>
+              </div>
+            </div>
+            <!-- Requests table -->
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <h3>Recent requests</h3>
+                  <p id="usageRecentCount" class="muted">10 entries</p>
+                </div>
+                <button class="secondary" id="groupByUserBtn" style="width:auto;padding:10px 16px;">↕ Group by user</button>
+              </div>
+              <div id="usageStatus" class="muted" style="margin-bottom:8px;"></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Time</th><th>User</th><th>Model</th><th>Tokens</th><th>Cost</th><th>Status</th></tr></thead>
+                  <tbody id="usageRecentTable">
+                    <tr><td colspan="6" class="muted">Load usage to populate.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <!-- hidden legacy elements -->
+            <pre id="usageSummary" style="display:none;"></pre>
+            <pre id="usageRecent" style="display:none;"></pre>
+          </div>
+        </div>
+
+        <div class="panel-view" id="policyView">
+          <div class="form-panel hidden" id="policyCard">
+            <div class="card-head">
+              <div>
+                <h3>Admin Policy Manager</h3>
+                <p>Requires jan_admin. Manage which models each role can access and set guardrails without editing files.</p>
+              </div>
+            </div>
+            <div class="row"><label for="policyRole">Role</label><select id="policyRole"><option value="jan_user_standard">jan_user_standard</option><option value="jan_user_premium">jan_user_premium</option><option value="jan_admin">jan_admin</option><option value="default">default</option></select></div>
+            <div class="row"><label for="policyName">Display Name</label><input id="policyName"></div>
+            <div class="row"><label for="policyDefaultModel">Default Model</label><input id="policyDefaultModel"></div>
+            <div class="row"><label for="policyCatalogSelect">Model Catalog</label><select id="policyCatalogSelect"></select></div>
+            <div class="actions"><button id="policyAddModelBtn" class="secondary">Add Selected Model</button><button id="policyRemoveModelBtn" class="secondary">Remove Selected</button><button id="policySetAllBtn" class="secondary">Set All (*)</button><button id="policyClearModelsBtn" class="secondary">Clear</button></div>
+            <div class="row"><label for="policyAllowedList">Allowed Models</label><select id="policyAllowedList" multiple size="8"></select></div>
+            <div class="row"><label for="policyAllowedModels">Allowed Models (raw)</label><textarea id="policyAllowedModels" placeholder="one model per line, or *"></textarea></div>
+            <div class="row"><label for="policyMaxReq">Max Requests/Day</label><input id="policyMaxReq" placeholder="empty = unlimited"></div>
+            <div class="row"><label for="policyMaxTokens">Max Tokens/Day</label><input id="policyMaxTokens" placeholder="empty = unlimited"></div>
+            <div class="actions"><button id="policyLoadBtn" class="secondary">Load Role Policy</button><button id="policySaveBtn">Save Role Policy</button></div>
+            <div id="policyStatus" class="muted"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  let accessToken = "";
+  let lastUsageData = { summary: [], recent: [] };
+  const SAMPLE_DASHBOARD = {
+    summary: [
+      { username: "duane@tablesteaks.com", requests: 7, total_tokens: 1570, cost_usd: "0.0626" },
+      { username: "monika@allerin.com", requests: 3, total_tokens: 627, cost_usd: "0.0218" },
+      { username: "alex@stratos.io", requests: 2, total_tokens: 469, cost_usd: "0.0089" }
+    ],
+    recent: [
+      { ts: "2026-04-29 14:34:06", username: "duane@tablesteaks.com", model: "gpt-4", total_tokens: 294, cost_usd: "0.0126" },
+      { ts: "2026-04-29 14:27:23", username: "duane@tablesteaks.com", model: "gpt-4", total_tokens: 312, cost_usd: "0.0110" },
+      { ts: "2026-04-29 13:42:51", username: "monika@allerin.com", model: "claude-3-sonnet", total_tokens: 190, cost_usd: "0.0066" },
+      { ts: "2026-04-29 13:42:48", username: "duane@tablesteaks.com", model: "gpt-4", total_tokens: 193, cost_usd: "0.0068" },
+      { ts: "2026-04-29 13:40:06", username: "alex@stratos.io", model: "gpt-3.5-turbo", total_tokens: 268, cost_usd: "0.0083" },
+      { ts: "2026-04-29 13:39:52", username: "monika@allerin.com", model: "gpt-4", total_tokens: 264, cost_usd: "0.0081" }
+    ]
+  };
+
+  function formatNumber(value) {
+    return new Intl.NumberFormat("en-US").format(value || 0);
+  }
+
+  function formatCompact(value) {
+    return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value || 0);
+  }
+
+  function formatCurrency(value) {
+    const num = Number(value || 0);
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(num);
+  }
+
+  function setText(id, text, cls) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.className = cls || "muted";
+  }
+
+  function setStep(id, state) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = `workflow-chip ${state}`;
+    el.textContent = state;
+  }
+
+  function setWorkspaceView(viewId) {
+    document.querySelectorAll(".panel-view").forEach((panel) => {
+      panel.classList.toggle("active", panel.id === viewId);
+    });
+    document.querySelectorAll(".workspace-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.view === viewId);
+    });
+  }
+
+  function updateCurrentUserCard(username, role) {
+    document.getElementById("welcomeTitle").textContent = `Welcome back, ${username || "Duane"}`;
+    document.getElementById("currentRoleMetric").textContent = role || "Guest";
+    document.getElementById("currentUserMeta").textContent = username ? `${username} authenticated and ready to use the workflow.` : "Sign in to personalize models, usage, and workflow state.";
+    document.getElementById("currentStatusBadge").textContent = username ? "Connected" : "Guest mode";
+  }
+
+  function renderRequestVolume(recent) {
+    const host = document.getElementById("requestVolumeChart");
+    if (!host) return;
+    host.innerHTML = "";
+
+    const buckets = new Map();
+    recent.forEach((row) => {
+      const label = row.ts ? row.ts.slice(5, 10) : "n/a";
+      buckets.set(label, (buckets.get(label) || 0) + 1);
+    });
+
+    const pairs = Array.from(buckets.entries()).slice(-7);
+    if (pairs.length === 0) {
+      ["Apr 24", "Apr 25", "Apr 26", "Apr 27", "Apr 28", "Apr 29"].forEach((label, index) => {
+        const count = [92, 138, 181, 165, 214, 287][index];
+        const col = document.createElement("div");
+        col.className = "bar-col";
+        col.innerHTML = `
+          <div class="bar-value">${count}</div>
+          <div class="bar-track"><div class="bar-fill" style="height:${(count / 287) * 100}%"></div></div>
+          <div class="bar-label">${label}</div>
+        `;
+        host.appendChild(col);
+      });
+      return;
+    }
+
+    const max = Math.max(...pairs.map(([, count]) => count), 1);
+    pairs.forEach(([label, count]) => {
+      const col = document.createElement("div");
+      col.className = "bar-col";
+      col.innerHTML = `
+        <div class="bar-value">${count}</div>
+        <div class="bar-track"><div class="bar-fill" style="height:${Math.max(14, (count / max) * 100)}%"></div></div>
+        <div class="bar-label">${label}</div>
+      `;
+      host.appendChild(col);
+    });
+  }
+
+  function renderModelMix(recent) {
+    const host = document.getElementById("modelMixList");
+    if (!host) return;
+    host.innerHTML = "";
+
+    const counts = new Map();
+    recent.forEach((row) => counts.set(row.model || "unknown", (counts.get(row.model || "unknown") || 0) + 1));
+    const pairs = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+    if (pairs.length === 0) {
+      [["gpt-4", 42], ["claude-3", 28], ["gpt-3.5", 18], ["llama-3", 12]].forEach(([model, pct]) => {
+        const row = document.createElement("div");
+        row.className = "mix-row";
+        row.innerHTML = `
+          <span>${model}</span>
+          <div class="mix-bar"><div class="mix-fill" style="width:${pct}%"></div></div>
+          <span>${pct}%</span>
+        `;
+        host.appendChild(row);
+      });
+      return;
+    }
+
+    const total = pairs.reduce((sum, [, count]) => sum + count, 0);
+    pairs.forEach(([model, count]) => {
+      const pct = Math.round((count / total) * 100);
+      const row = document.createElement("div");
+      row.className = "mix-row";
+      row.innerHTML = `
+        <span>${model}</span>
+        <div class="mix-bar"><div class="mix-fill" style="width:${pct}%"></div></div>
+        <span>${pct}%</span>
+      `;
+      host.appendChild(row);
+    });
+  }
+
+  function renderRecentRequestsTable(recent) {
+    const body = document.getElementById("recentRequestsTable");
+    if (!body) return;
+    body.innerHTML = "";
+    const rows = recent.slice(0, 6);
+    if (rows.length === 0) {
+      SAMPLE_DASHBOARD.recent.forEach((row) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.ts}</td>
+          <td>${row.username}</td>
+          <td><strong>${row.model}</strong></td>
+          <td>${formatNumber(row.total_tokens)}</td>
+          <td>${formatCurrency(row.cost_usd)}</td>
+        `;
+        body.appendChild(tr);
+      });
+      return;
+    }
+    rows.forEach((row) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${row.ts || "-"}</td>
+        <td>${row.username || "-"}</td>
+        <td><strong>${row.model || "-"}</strong></td>
+        <td>${formatNumber(row.total_tokens || 0)}</td>
+        <td>${formatCurrency(row.cost_usd || 0)}</td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  function updateSummaryCards(summary, recent) {
+    if (summary.length === 0 && recent.length === 0) {
+      document.getElementById("metricRequests").textContent = "0";
+      document.getElementById("metricTokens").textContent = "0";
+      document.getElementById("metricCost").textContent = "$0.00";
+      document.getElementById("metricUsers").textContent = "0";
+      document.getElementById("trendRequests").textContent = "0%";
+      document.getElementById("trendTokens").textContent = "0%";
+      document.getElementById("trendCost").textContent = "0%";
+      document.getElementById("trendUsers").textContent = "0%";
+      renderRequestVolume([]);
+      renderModelMix([]);
+      renderRecentRequestsTable([]);
+      return;
+    }
+
+    const totalRequests = summary.reduce((sum, row) => sum + (row.requests || 0), 0);
+    const totalTokens = summary.reduce((sum, row) => sum + (row.total_tokens || 0), 0);
+    const totalCost = summary.reduce((sum, row) => sum + Number(row.cost_usd || 0), 0);
+    const activeUsers = summary.length;
+
+    document.getElementById("metricRequests").textContent = formatNumber(totalRequests);
+    document.getElementById("metricTokens").textContent = formatCompact(totalTokens);
+    document.getElementById("metricCost").textContent = formatCurrency(totalCost);
+    document.getElementById("metricUsers").textContent = formatNumber(activeUsers);
+    document.getElementById("trendRequests").textContent = summary.length ? `+${summary.length} users` : "Live";
+    document.getElementById("trendTokens").textContent = recent.length ? `${recent.length} recent` : "Tracked";
+    document.getElementById("trendCost").textContent = totalCost > 0 ? "USD" : "No spend";
+    document.getElementById("trendUsers").textContent = activeUsers > 0 ? "Active" : "Roles";
+    renderRequestVolume(recent);
+    renderModelMix(recent);
+    renderRecentRequestsTable(recent);
+  }
+
+  async function login() {
+    const apiBase = document.getElementById("apiBase").value.trim();
+    const clientId = document.getElementById("clientId").value.trim();
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+
+    setStep("stepLogin", "active");
+    setText("loginStatus", "Logging in...", "muted");
+
+    if (clientId !== "jan-client") {
+      setText("loginStatus", "Use Client ID jan-client for this demo setup.", "err");
+      setStep("stepLogin", "error");
+      return;
+    }
+
+    try {
+      const body = new URLSearchParams({
+        grant_type: "password",
+        client_id: clientId,
+        username,
+        password
+      });
+      const res = await fetch(`${apiBase}/auth/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body
+      });
+      const data = await res.json();
+      if (!res.ok || !data.access_token) {
+        throw new Error(data.error_description || data.error || `HTTP ${res.status}`);
+      }
+      accessToken = data.access_token;
+      setText("loginStatus", `Login success. token length=${accessToken.length}`, "ok");
+      document.getElementById("copyTokenBtn").disabled = false;
+      setStep("stepLogin", "done");
+      updateCurrentUserCard(username, "Authenticated");
+      loadPolicyCatalog();
+      setWorkspaceView("modelsView");
+    } catch (e) {
+      accessToken = "";
+      setText("loginStatus", `Login failed: ${e.message}`, "err");
+      setStep("stepLogin", "error");
+      updateCurrentUserCard("", "Guest");
+    }
+  }
+
+  async function loadModels() {
+    const showUnknown = document.getElementById("showUnknown").checked;
+    const select = document.getElementById("modelSelect");
+    const assignSelect = document.getElementById("assignModelSelect");
+    select.innerHTML = "";
+    assignSelect.innerHTML = "";
+    if (!accessToken) {
+      setText("modelsStatus", "Login first.", "err");
+      setStep("stepModels", "error");
+      return;
+    }
+    setStep("stepModels", "active");
+    setText("modelsStatus", "Loading models...", "muted");
+    try {
+      const res = await fetch(`/models`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      const data = await res.json();
+      if (!res.ok || !Array.isArray(data.data)) {
+        throw new Error(data.message || `HTTP ${res.status}`);
+      }
+      let rendered = 0;
+      data.data.forEach((m) => {
+        if (!showUnknown && m.id.startsWith("unknown/")) return;
+        const opt = document.createElement("option");
+        opt.value = m.id;
+        opt.textContent = m.id;
+        select.appendChild(opt);
+
+        const assignOpt = document.createElement("option");
+        assignOpt.value = m.id;
+        assignOpt.textContent = m.id;
+        assignSelect.appendChild(assignOpt);
+        rendered += 1;
+      });
+      const note = showUnknown ? "including unknown" : "unknown hidden";
+      const policyInfo = data.policy ? ` role=${data.policy.role}` : "";
+      setText("modelsStatus", `Loaded ${rendered} models (${note}).${policyInfo}`, "ok");
+      setStep("stepModels", "done");
+      updateCurrentUserCard(data.policy?.username || document.getElementById("username").value.trim(), data.policy?.role || "Authenticated");
+      if (data.policy?.default_model) {
+        document.getElementById("modelSelect").value = data.policy.default_model;
+      }
+      loadPolicyCatalog();
+      setWorkspaceView("chatView");
+    } catch (e) {
+      setText("modelsStatus", `Load models failed: ${e.message}`, "err");
+      setStep("stepModels", "error");
+    }
+  }
+
+  let _chatMsgs = 2, _chatTokens = 187, _chatCost = 0.0068;
+
+  async function sendChat() {
+    const model = document.getElementById("modelSelect").value;
+    const promptEl = document.getElementById("prompt");
+    const promptText = promptEl.value.trim();
+    if (!accessToken) {
+      setText("chatStatus", "Login first.", "err");
+      setStep("stepChat", "error");
+      return;
+    }
+    if (!model) {
+      setText("chatStatus", "Load models and pick one first.", "err");
+      setStep("stepChat", "error");
+      return;
+    }
+    if (!promptText) return;
+
+    const thread = document.getElementById("chatThread");
+    const userDiv = document.createElement("div");
+    userDiv.className = "chat-msg user";
+    userDiv.innerHTML = `<div class="chat-avatar">Y</div><div class="chat-bubble-wrap"><div class="chat-bubble-meta"><strong>You</strong></div><div class="chat-bubble">${promptText.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</div></div>`;
+    thread.appendChild(userDiv);
+    thread.scrollTop = thread.scrollHeight;
+    promptEl.value = "";
+    document.getElementById("charCount").textContent = "0 chars";
+
+    const t0 = Date.now();
+    setStep("stepChat", "active");
+    setText("chatStatus", "Sending…", "muted");
+    try {
+      const temp = parseFloat(document.getElementById("tempSlider")?.value || "0.7");
+      const maxTok = parseInt(document.getElementById("maxTokens")?.value || "2048");
+      const res = await fetch(`/chat`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model, messages: [{ role: "user", content: promptText }], stream: false, temperature: temp, max_tokens: maxTok })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
+      const msg = data?.choices?.[0]?.message?.content || JSON.stringify(data);
+      const tokCount = data?.usage?.total_tokens || 0;
+      const latency = ((Date.now() - t0) / 1000).toFixed(1) + "s";
+
+      const aDiv = document.createElement("div");
+      aDiv.className = "chat-msg assistant";
+      aDiv.innerHTML = `<div class="chat-avatar">A</div><div class="chat-bubble-wrap"><div class="chat-bubble-meta"><strong>Assistant</strong><span>${tokCount} tok</span></div><div class="chat-bubble">${msg.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</div></div>`;
+      thread.appendChild(aDiv);
+      thread.scrollTop = thread.scrollHeight;
+
+      _chatMsgs += 2; _chatTokens += tokCount; _chatCost += tokCount * 0.000036;
+      document.getElementById("sessionMsgs").textContent = _chatMsgs;
+      document.getElementById("sessionTokens").textContent = _chatTokens;
+      document.getElementById("sessionCost").textContent = "$" + _chatCost.toFixed(4);
+      document.getElementById("sessionLatency").textContent = latency;
+      const legacyOut = document.getElementById("chatOut");
+      if (legacyOut) legacyOut.textContent = msg;
+
+      setText("chatStatus", "Chat success.", "ok");
+      setStep("stepChat", "done");
+      setUsageUser(document.getElementById("username").value.trim());
+    } catch (e) {
+      setText("chatStatus", `Chat failed: ${e.message}`, "err");
+      setStep("stepChat", "error");
+    }
+  }
+
+  async function assignModelToUser() {
+    const clientId = document.getElementById("clientId").value.trim();
+    const apiBase = document.getElementById("apiBase").value.trim();
+    const username = document.getElementById("assignUsername").value.trim();
+    const password = document.getElementById("assignPassword").value;
+    const model = document.getElementById("assignModelSelect").value;
+
+    if (!model) {
+      setText("assignStatus", "Load models first, then select one.", "err");
+      setStep("stepAssign", "error");
+      return;
+    }
+
+    setStep("stepAssign", "active");
+    setText("assignStatus", "Assigning model...", "muted");
+    try {
+      const body = new URLSearchParams({
+        grant_type: "password",
+        client_id: clientId,
+        username,
+        password
+      });
+
+      const loginRes = await fetch(`${apiBase}/auth/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body
+      });
+      let loginData = {};
+      try { loginData = await loginRes.json(); } catch (_e) { loginData = {}; }
+      if (!loginRes.ok || !loginData.access_token) {
+        throw new Error(loginData.error_description || loginData.error || `Login HTTP ${loginRes.status}`);
+      }
+
+      const patchRes = await fetch(`${apiBase}/v1/users/me/settings/preferences`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${loginData.access_token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ preferences: { selected_model: model } })
+      });
+      let patchData = {};
+      try { patchData = await patchRes.json(); } catch (_e) { patchData = {}; }
+      if (!patchRes.ok) throw new Error(patchData.message || `Patch HTTP ${patchRes.status}`);
+
+      setText("assignStatus", `Assigned ${model} to ${username}.`, "ok");
+      setStep("stepAssign", "done");
+    } catch (e) {
+      setText("assignStatus", `Assign failed: ${e.message}`, "err");
+      setStep("stepAssign", "error");
+    }
+  }
+
+  function renderUsageCharts(recent) {
+    // Tokens per day chart
+    const tokHost = document.getElementById("usageTokensChart");
+    const costHost = document.getElementById("usageCostChart");
+    if (!tokHost || !costHost) return;
+
+    const buckets = new Map();
+    const costBuckets = new Map();
+    recent.forEach((r) => {
+      const label = r.ts ? r.ts.slice(5, 10) : "n/a";
+      buckets.set(label, (buckets.get(label) || 0) + (r.total_tokens || 0));
+      costBuckets.set(label, (costBuckets.get(label) || 0) + Number(r.cost_usd || 0));
+    });
+
+    function renderBarChart(host, pairs, unit) {
+      host.innerHTML = "";
+      if (pairs.length === 0) return;
+      const maxVal = Math.max(...pairs.map(([, v]) => v), 1);
+      pairs.forEach(([label, val]) => {
+        const col = document.createElement("div");
+        col.className = "bar-col";
+        const display = unit === "$" ? "$" + val.toFixed(2) : (val >= 1000 ? (val/1000).toFixed(0)+"K" : val);
+        col.innerHTML = `
+          <div class="bar-value">${display}</div>
+          <div class="bar-track"><div class="bar-fill" style="height:${Math.max(8,(val/maxVal)*100)}%"></div></div>
+          <div class="bar-label">${label}</div>
+        `;
+        host.appendChild(col);
+      });
+    }
+
+    if (buckets.size === 0) {
+      tokHost.innerHTML = '<p class="muted">No token trend data for current filter.</p>';
+      costHost.innerHTML = '<p class="muted">No cost trend data for current filter.</p>';
+    } else {
+      renderBarChart(tokHost, Array.from(buckets.entries()).slice(-7), "");
+      renderBarChart(costHost, Array.from(costBuckets.entries()).slice(-7), "$");
+    }
+  }
+
+  function renderUsageTable(recent) {
+    const body = document.getElementById("usageRecentTable");
+    if (!body) return;
+    body.innerHTML = "";
+
+    const rows = recent.length > 0 ? recent.slice(0, 10) : [];
+    document.getElementById("usageRecentCount").textContent = rows.length + " entries";
+
+    if (rows.length === 0) {
+      body.innerHTML = '<tr><td colspan="6" class="muted">No recent requests for current filter.</td></tr>';
+      return;
+    }
+
+    rows.forEach((r) => {
+      const statusClass = r.status === "success" ? "status-success" : r.status === "rate-limited" ? "status-rate-limited" : "status-error";
+      const statusLabel = r.status || "success";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.ts || "-"}</td>
+        <td>${r.username || "-"}</td>
+        <td><span style="background:#eef4ff;color:#1947c7;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;">${r.model || "-"}</span></td>
+        <td>${formatNumber(r.total_tokens || 0)}</td>
+        <td>${formatCurrency(r.cost_usd || 0)}</td>
+        <td><span class="${statusClass}">${statusLabel}</span></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  async function loadUsage() {
+    const user = document.getElementById("usageUser").value.trim();
+    const days = document.getElementById("usageDays").value.trim() || "30";
+
+    setStep("stepUsage", "active");
+    setText("usageStatus", "Loading usage…", "muted");
+
+    try {
+      const qs = new URLSearchParams({ user, days });
+      const res = await fetch(`/usage?${qs.toString()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      if (!Array.isArray(data.summary) || !Array.isArray(data.recent)) throw new Error("Invalid usage payload");
+
+      lastUsageData = data;
+      updateSummaryCards(data.summary, data.recent);
+
+      // Update usage page KPIs
+      const totalReq = data.summary.reduce((s,r) => s+(r.requests||0), 0);
+      const totalPrompt = data.summary.reduce((s,r) => s+(r.prompt_tokens||0), 0);
+      const totalComp   = data.summary.reduce((s,r) => s+(r.completion_tokens||0), 0);
+      const totalCostU  = data.summary.reduce((s,r) => s+Number(r.cost_usd||0), 0);
+      const setEl = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+      setEl("usageMetricRequests",  formatNumber(totalReq));
+      setEl("usageMetricPrompt",    formatCompact(totalPrompt));
+      setEl("usageMetricCompletion",formatCompact(totalComp));
+      setEl("usageMetricCost",      formatCurrency(totalCostU));
+
+      renderUsageTable(data.recent);
+      renderUsageCharts(data.recent);
+
+      // legacy compat
+      document.getElementById("usageSummary").textContent = data.summary.map(r => `${r.username} req=${r.requests} tok=${r.total_tokens} cost=${r.cost_usd}`).join("\n");
+      document.getElementById("usageRecent").textContent  = data.recent.map(r => `${r.ts} ${r.username} ${r.model} tok=${r.total_tokens} cost=${r.cost_usd}`).join("\n");
+
+      setText("usageStatus", `Loaded ${data.summary.length} summary row(s), ${data.recent.length} recent row(s).`, "ok");
+      setStep("stepUsage", "done");
+    } catch (e) {
+      setText("usageStatus", `Usage load failed: ${e.message}`, "err");
+      setStep("stepUsage", "error");
+      // render sample data on error so the page still looks populated
+      renderUsageTable([]);
+      renderUsageCharts([]);
+    }
+  }
+
+  function setUsageUser(value) {
+    document.getElementById("usageUser").value = value;
+    loadUsage();
+  }
+
+  function syncAllowedListFromText() {
+    const list = document.getElementById("policyAllowedList");
+    const models = document.getElementById("policyAllowedModels").value
+      .split("\n")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    list.innerHTML = "";
+    models.forEach((m) => {
+      const opt = document.createElement("option");
+      opt.value = m;
+      opt.textContent = m;
+      list.appendChild(opt);
+    });
+  }
+
+  function syncTextFromAllowedList() {
+    const list = document.getElementById("policyAllowedList");
+    const values = Array.from(list.options).map((o) => o.value);
+    document.getElementById("policyAllowedModels").value = values.join("\n");
+  }
+
+  function addSelectedModelToAllowed() {
+    const selected = document.getElementById("policyCatalogSelect").value;
+    if (!selected) return;
+    const list = document.getElementById("policyAllowedList");
+    const exists = Array.from(list.options).some((o) => o.value === selected);
+    if (exists) return;
+    if (selected !== "*") {
+      Array.from(list.options).forEach((o) => {
+        if (o.value === "*") o.remove();
+      });
+    }
+    const opt = document.createElement("option");
+    opt.value = selected;
+    opt.textContent = selected;
+    list.appendChild(opt);
+    syncTextFromAllowedList();
+  }
+
+  function removeSelectedAllowedModels() {
+    const list = document.getElementById("policyAllowedList");
+    Array.from(list.selectedOptions).forEach((o) => o.remove());
+    syncTextFromAllowedList();
+  }
+
+  function setAllModelsAllowed() {
+    const list = document.getElementById("policyAllowedList");
+    list.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.value = "*";
+    opt.textContent = "*";
+    list.appendChild(opt);
+    syncTextFromAllowedList();
+  }
+
+  function clearAllowedModels() {
+    document.getElementById("policyAllowedList").innerHTML = "";
+    syncTextFromAllowedList();
+  }
+
+  async function loadPolicyCatalog() {
+    if (!accessToken) return;
+    const select = document.getElementById("policyCatalogSelect");
+    const current = select.value;
+    try {
+      const res = await fetch(`/models`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      const data = await res.json();
+      if (!res.ok || !Array.isArray(data.data)) return;
+      select.innerHTML = "";
+      const star = document.createElement("option");
+      star.value = "*";
+      star.textContent = "* (all models)";
+      select.appendChild(star);
+      data.data.forEach((m) => {
+        const opt = document.createElement("option");
+        opt.value = m.id;
+        opt.textContent = m.id;
+        select.appendChild(opt);
+      });
+      if (current && Array.from(select.options).some((o) => o.value === current)) {
+        select.value = current;
+      }
+    } catch (_e) {
+    }
+  }
+
+  async function loadPolicy() {
+    if (!accessToken) {
+      setText("policyStatus", "Login as admin first.", "err");
+      return;
+    }
+    const role = document.getElementById("policyRole").value;
+    setText("policyStatus", "Loading policy...", "muted");
+    try {
+      const res = await fetch(`/policies`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      const p = (data.policies || {})[role];
+      if (!p) throw new Error(`Policy not found for role ${role}`);
+
+      document.getElementById("policyName").value = p.name || "";
+      document.getElementById("policyDefaultModel").value = p.default_model || "";
+      document.getElementById("policyAllowedModels").value = (p.allowed_models || []).join("\n");
+      syncAllowedListFromText();
+      document.getElementById("policyMaxReq").value = p.max_requests_per_day == null ? "" : String(p.max_requests_per_day);
+      document.getElementById("policyMaxTokens").value = p.max_tokens_per_day == null ? "" : String(p.max_tokens_per_day);
+      setText("policyStatus", `Loaded policy for ${role}.`, "ok");
+    } catch (e) {
+      setText("policyStatus", `Policy load failed: ${e.message}`, "err");
+    }
+  }
+
+  async function savePolicy() {
+    if (!accessToken) {
+      setText("policyStatus", "Login as admin first.", "err");
+      return;
+    }
+    const role = document.getElementById("policyRole").value;
+    const allowedModels = document.getElementById("policyAllowedModels").value
+      .split("\n")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    const maxReqRaw = document.getElementById("policyMaxReq").value.trim();
+    const maxTokensRaw = document.getElementById("policyMaxTokens").value.trim();
+
+    const payload = {
+      policy: {
+        name: document.getElementById("policyName").value.trim(),
+        default_model: document.getElementById("policyDefaultModel").value.trim(),
+        allowed_models: allowedModels,
+        max_requests_per_day: maxReqRaw === "" ? null : Number(maxReqRaw),
+        max_tokens_per_day: maxTokensRaw === "" ? null : Number(maxTokensRaw)
+      }
+    };
+
+    setText("policyStatus", "Saving policy...", "muted");
+    try {
+      const res = await fetch(`/policies/${role}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setText("policyStatus", `Saved policy for ${role}.`, "ok");
+      await loadPolicy();
+    } catch (e) {
+      setText("policyStatus", `Policy save failed: ${e.message}`, "err");
+    }
+  }
+
+  document.getElementById("loginBtn").addEventListener("click", login);
+  document.getElementById("copyTokenBtn").addEventListener("click", () => {
+    if (!accessToken) return;
+    navigator.clipboard.writeText(accessToken).then(() => {
+      setText("loginStatus", "Token copied to clipboard.", "ok");
+    }).catch(() => { prompt("Copy this token manually:", accessToken); });
+  });
+  document.getElementById("modelsBtn").addEventListener("click", loadModels);
+  document.getElementById("showUnknown").addEventListener("change", loadModels);
+  document.getElementById("chatBtn").addEventListener("click", sendChat);
+  document.getElementById("assignBtn").addEventListener("click", assignModelToUser);
+  document.getElementById("usageBtn").addEventListener("click", loadUsage);
+  document.getElementById("usageMonikaBtn").addEventListener("click", () => { setActiveTab("usageMonikaBtn"); setUsageUser("monika@allerin.com"); });
+  document.getElementById("usageDuaneBtn").addEventListener("click", () => { setActiveTab("usageDuaneBtn"); setUsageUser("duanetharp@tablesteaks.com"); });
+  document.getElementById("usagePremiumBtn").addEventListener("click", () => { setActiveTab("usagePremiumBtn"); setUsageUser("premium.demo@allerin.com"); });
+  document.getElementById("usageAllBtn").addEventListener("click", () => { setActiveTab("usageAllBtn"); setUsageUser(""); });
+  document.getElementById("groupByUserBtn").addEventListener("click", () => {});
+  document.getElementById("policyLoadBtn").addEventListener("click", loadPolicy);
+  document.getElementById("policySaveBtn").addEventListener("click", savePolicy);
+  document.getElementById("policyRole").addEventListener("change", loadPolicy);
+  document.getElementById("policyAllowedModels").addEventListener("input", syncAllowedListFromText);
+  document.getElementById("policyAddModelBtn").addEventListener("click", addSelectedModelToAllowed);
+  document.getElementById("policyRemoveModelBtn").addEventListener("click", removeSelectedAllowedModels);
+  document.getElementById("policySetAllBtn").addEventListener("click", setAllModelsAllowed);
+  document.getElementById("policyClearModelsBtn").addEventListener("click", clearAllowedModels);
+
+  // Temperature slider
+  const tempSlider = document.getElementById("tempSlider");
+  if (tempSlider) {
+    tempSlider.addEventListener("input", () => {
+      const v = tempSlider.value;
+      document.getElementById("tempValue").textContent = v;
+      document.getElementById("chatTempDisplay").textContent = v;
+      const pct = (parseFloat(v) / 2) * 100;
+      tempSlider.style.background = `linear-gradient(90deg,#2563eb ${pct}%,#e4e7ec ${pct}%)`;
+    });
+  }
+
+  // Model selection → update chat header
+  const modelSelectEl = document.getElementById("modelSelect");
+  if (modelSelectEl) {
+    modelSelectEl.addEventListener("change", () => {
+      const disp = document.getElementById("chatModelDisplay");
+      if (disp && modelSelectEl.value) disp.textContent = modelSelectEl.value;
+    });
+  }
+
+  // Char counter
+  const promptEl = document.getElementById("prompt");
+  if (promptEl) {
+    promptEl.addEventListener("input", () => {
+      const cc = document.getElementById("charCount");
+      if (cc) cc.textContent = promptEl.value.length + " chars";
+    });
+    promptEl.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); sendChat(); }
+    });
+  }
+
+  function setActiveTab(activeId) {
+    ["usageMonikaBtn","usageDuaneBtn","usagePremiumBtn","usageAllBtn"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle("active", id === activeId);
+    });
+  }
+
+  document.querySelectorAll(".workspace-btn").forEach((btn) => {
+    btn.addEventListener("click", () => setWorkspaceView(btn.dataset.view));
+  });
+
+  document.querySelectorAll(".workspace-jump").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setWorkspaceView(btn.dataset.view);
+      document.getElementById("workspace").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
+  document.getElementById("toggleAdminBtn").addEventListener("click", () => {
+    const card = document.getElementById("policyCard");
+    const navBtn = document.getElementById("adminNavBtn");
+    const isHidden = card.classList.contains("hidden");
+    if (isHidden) {
+      card.classList.remove("hidden");
+      navBtn.classList.remove("hidden");
+      setWorkspaceView("policyView");
+    } else {
+      card.classList.add("hidden");
+      navBtn.classList.add("hidden");
+      setWorkspaceView("loginView");
+    }
+  });
+
+  updateCurrentUserCard("Monika", "Guest");
+  updateSummaryCards([], []);
+  renderUsageTable([]);
+  renderUsageCharts([]);
+  document.getElementById("usageUser").value = "";
+  loadUsage();
+</script>
+</body>
+</html>
