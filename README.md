@@ -7,67 +7,70 @@ Demo workflow console for JAN API with:
 - Chat proxy endpoint
 - Usage dashboard backed by JAN database tables
 
-## What Is In This Repo
+## Repository Contents
 
-- `scripts/jan-demo-ui/index.html`:
-	UI for dashboard, chat workflow, usage, and policy manager.
-- `scripts/jan-demo-ui/app.py`:
-	Local HTTP server and backend adapter (`/models`, `/chat`, `/usage`, `/policies`).
-- `scripts/jan-demo-ui/policies.json`:
-	Role policy configuration used by backend.
-- `scripts/jan-demo-ui/start.sh`:
-	Start helper for local UI/backend server.
+- `scripts/jan-demo-ui/index.html`
+  - Dashboard, workflow UI, chat view, usage view, policy manager UI.
+- `scripts/jan-demo-ui/app.py`
+  - Local server + adapter endpoints (`/models`, `/chat`, `/usage`, `/policies`).
+- `scripts/jan-demo-ui/policies.json`
+  - Role-based policy config.
+- `scripts/jan-demo-ui/start.sh`
+  - Starts demo UI/backend server.
+- `infra/keycloak/docker-compose.yml`
+  - Local Keycloak + PostgreSQL stack.
+- `scripts/cleanup-keycloak-guests.sh`
+  - Removes synthetic `guest-...@temp.jan.ai` users.
+- `scripts/bootstrap-local.sh`
+  - One-command bootstrap for local setup.
 
 ## Prerequisites
 
-You need the following services running locally:
+1. Docker + Docker Compose
+2. Python 3 (`python3`)
+3. JAN API running at `http://localhost:8000`
 
-1. Keycloak at `http://localhost:8085`
-2. JAN API at `http://localhost:8000`
-3. Python 3 available as `python3`
+## Quick Start (One Command)
 
-See [Dependencies](#dependencies) below for setup instructions.
+```bash
+chmod +x scripts/bootstrap-local.sh scripts/jan-demo-ui/start.sh scripts/cleanup-keycloak-guests.sh
+./scripts/bootstrap-local.sh
+```
 
-## Setup: Keycloak (Local Development)
+This will:
 
-Use Docker Compose to start Keycloak locally:
+1. Start Keycloak stack from `infra/keycloak/docker-compose.yml`
+2. Check JAN API readiness (best-effort)
+3. Start demo UI/backend on port `9000`
+
+Open:
+
+- `http://localhost:9000`
+
+## Manual Start (Step-by-Step)
+
+### 1) Start Keycloak
 
 ```bash
 cd infra/keycloak
 docker-compose up -d
 ```
 
-This starts:
-- **Keycloak** at `http://localhost:8085`
-- **PostgreSQL** for Keycloak (internal, port 5433)
+Keycloak admin console:
 
-Admin console:
 - URL: `http://localhost:8085`
 - Username: `admin`
 - Password: `admin`
 
-You will need to configure the `jan` realm and `jan-client` OAuth client in Keycloak manually or import a realm export file.
-
-To tear down:
-```bash
-cd infra/keycloak
-docker-compose down
-```
-
-## Quick Start
-
-From repo root:
+### 2) Start Demo UI/Backend
 
 ```bash
+cd ../..
 chmod +x scripts/jan-demo-ui/start.sh
 ./scripts/jan-demo-ui/start.sh 9000
 ```
 
-Open:
-
-- `http://localhost:9000`
-
-Default login fields in UI:
+### 3) Login Defaults in UI
 
 - Keycloak Base: `http://localhost:8085`
 - Realm: `jan`
@@ -78,41 +81,28 @@ Default login fields in UI:
 `app.py` exposes local endpoints that wrap JAN:
 
 - `GET /models`
-	- Reads JWT roles
-	- Filters models by `policies.json`
+  - Reads JWT roles
+  - Filters models via `policies.json`
 - `POST /chat`
-	- Enforces model allowlist + daily limits
-	- Forwards normalized payload to `Pin Keycloak, run the automated cleanup script:
+  - Enforces model allowlist and daily limits
+  - Forwards normalized payload to JAN `/v1/chat/completions`
+- `GET /usage?user=&days=30`
+  - Reads from JAN DB tables:
+    - `llm_api.token_usage_daily`
+    - `llm_api.token_usage`
+  - Scoped by default to demo users
+- `GET /policies`, `PUT /policies/{role}`
+  - Admin-only (`jan_admin`)
 
-```bash
-chmod +x scripts/cleanup-keycloak-guests.sh
-./scripts/cleanup-keycloak-guests.sh
-```
+## Demo User Scope
 
-This script safely removes all users matching `guest-...@temp.jan.ai` from the `jan` realm.
-
-Override Keycloak connection if needed:
-```bash
-KC_BASE=http://localhost:8085 KC_ADMIN_USER=admin KC_ADMIN_PASS=admin \
-  ./scripts/cleanup-keycloak-guests.sh
-```
-
-The cleanup script is idempotent (safe to run multiple times)
-	- Restricted by default to demo users (see below)
-- `GET /policies` and `PUT /policies/{role}`
-	- Admin-only (requires `jan_admin`)
-
-## Demo User Scope (Important)
-
-Usage is intentionally limited to demo users by default.
-
-Current default allowlist in `app.py`:
+Default active usage scope in `app.py`:
 
 - `monika@allerin.com`
 - `duanetharp@tablesteaks.com`
 - `premium.demo@allerin.com`
 
-Override with env var:
+Override:
 
 ```bash
 export DEMO_ACTIVE_USERS="monika@allerin.com,duanetharp@tablesteaks.com,premium.demo@allerin.com"
@@ -121,13 +111,37 @@ export DEMO_ACTIVE_USERS="monika@allerin.com,duanetharp@tablesteaks.com,premium.
 
 ## Keycloak Hygiene
 
-If synthetic guest users accumulate and you want a clean demo list, remove users matching:
+Remove synthetic guest users safely:
 
-- `guest-...@temp.jan.ai`
+```bash
+./scripts/cleanup-keycloak-guests.sh
+```
 
-Note: Deleting users in Keycloak changes runtime state only; it is not stored in git unless you commit automation scripts that perform the cleanup.
+Optional overrides:
 
-## Common Troubleshooting
+```bash
+KC_BASE=http://localhost:8085 KC_ADMIN_USER=admin KC_ADMIN_PASS=admin ./scripts/cleanup-keycloak-guests.sh
+```
+
+The cleanup script is idempotent (safe to run multiple times).
+
+## Dependencies
+
+### External Services
+
+1. JAN API Server (`http://localhost:8000`)
+   - Repository: `https://github.com/OwnersTable/ot-platform-infra`
+   - This demo proxies to JAN endpoints such as `/v1/models` and `/v1/chat/completions`
+
+2. Keycloak (`http://localhost:8085`)
+   - Provided locally via Docker Compose in this repo
+
+### JAN DB Tables Used
+
+- `llm_api.token_usage_daily`
+- `llm_api.token_usage`
+
+## Troubleshooting
 
 ### Port 9000 already in use
 
@@ -137,57 +151,20 @@ if [ -n "$PIDS" ]; then kill -9 $PIDS; fi
 ./scripts/jan-demo-ui/start.sh 9000
 ```
 
-### Verify backend script syntax
+### Validate backend syntax
 
 ```bash
 python3 -m py_compile scripts/jan-demo-ui/app.py
 ```
 
-### Verify usage endpoint quickly
+### Quick usage API check
 
 ```bash
 curl -s "http://localhost:9000/usage?user=&days=30"
 ```
 
-## Collaboration / Git Best Practices
+## Collaboration Notes
 
-1. Keep UI and backend changes in separate commits when possible.
-2. Never commit secrets, tokens, or passwords.
-3. Runtime admin actions (e.g., deleting users in Keycloak UI) should be documented in PR notes, not treated as code changes.
-4. Include validation notes in PR:
-	 - login works
-	 - model filtering works
-
-## Dependencies
-
-### External Services Required
-
-1. **JAN API Server** (`http://localhost:8000`)
-   - Repository: [OwnersTable/ot-platform-infra](https://github.com/OwnersTable/ot-platform-infra)
-   - Setup: Follow the JAN API README in that repo
-   - This demo proxies requests to JAN's `/v1/models` and `/v1/chat/completions` endpoints
-
-2. **Keycloak** (`http://localhost:8085`)
-   - Start locally using Docker Compose (see [Setup: Keycloak](#setup-keycloak-local-development) above)
-   - Realm: `jan`
-   - Client: `jan-client`
-   - Database: PostgreSQL (managed by Docker Compose)
-
-### JAN API Database Tables
-
-This demo reads usage data from:
-- `llm_api.token_usage_daily` — Daily token aggregates
-- `llm_api.token_usage` — Individual request logs
-
-These tables are managed by the JAN API backend.
-	 - chat works
-	 - usage counts are expected
-
-## Suggested Commit Scope
-
-For this project, a clean change set is:
-
-- `scripts/jan-demo-ui/index.html`
-- `scripts/jan-demo-ui/app.py`
-- `scripts/jan-demo-ui/policies.json`
-- `scripts/jan-demo-ui/start.sh`
+1. Keep UI/backend/infra/docs changes in logical commits.
+2. Never commit secrets or production credentials.
+3. Runtime admin actions are environment state unless automated via scripts.
