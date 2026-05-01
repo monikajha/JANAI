@@ -1,0 +1,38 @@
+{
+  "jan_admin": {
+    "name": "Admin",
+    "default_model": "openai/gpt-4o",
+    "allowed_models": [
+      "*"
+    ],
+    "max_requests_per_day": null,
+    "max_tokens_per_day": null
+  },
+  "jan_user_premium": {
+    "name": "Premimum",
+    "default_model": "",
+    "allowed_models": [
+      "*"
+    ],
+    "max_requests_per_day": null,
+    "max_tokens_per_day": null
+  },
+  "jan_user_standard": {
+    "name": "",
+    "default_model": "",
+    "allowed_models": [
+      "openai/gpt-4-0613"
+    ],
+    "max_requests_per_day": 2,
+    "max_tokens_per_day": 5
+  },
+  "default": {
+    "name": "Fallback",
+    "default_model": "openai/gpt-3.5-turbo",
+    "allowed_models": [
+      "openai/gpt-3.5-turbo"
+    ],
+    "max_requests_per_day": 200,
+    "max_tokens_per_day": 500000
+  }
+}
